@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legal Desk · Kolkata</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d2433;--mute:#667085;--line:#e4e0d6;--accent:#7a1f3d;--accent2:#f3e3e9;--good:#18794e;--warn:#b54708}
+@media (prefers-color-scheme:dark){:root{--bg:#14161c;--card:#1d2029;--ink:#eceef3;--mute:#98a2b3;--line:#2c3040;--accent:#e08aa5;--accent2:#33222a;--good:#4ade80;--warn:#fbbf24}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:22px 16px 10px;max-width:880px;margin:auto}
+h1{margin:0;font:600 24px/1.2 Georgia,"Times New Roman",serif;letter-spacing:.2px}
+h1 span{color:var(--accent)}
+.sub{color:var(--mute);font-size:13px;margin-top:4px}
+.bar{position:sticky;top:0;background:var(--bg);padding:10px 16px;border-bottom:1px solid var(--line);z-index:5}
+.bar-in{max-width:880px;margin:auto;display:grid;gap:8px}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(min-width:640px){.row{grid-template-columns:repeat(4,1fr)}}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+main{max-width:880px;margin:auto;padding:12px 16px 60px;display:grid;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.title{font-weight:600;font-size:16px;margin:0}
+.co{color:var(--mute);font-size:14px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.tag{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--accent2);color:var(--accent)}
+.tag.new{background:var(--good);color:#fff}
+.tag.plain{background:transparent;border:1px solid var(--line);color:var(--mute)}
+.score{min-width:52px;text-align:center;font-weight:700;font-size:15px;color:var(--good)}
+.score small{display:block;font-weight:400;font-size:10px;color:var(--mute)}
+.desc{color:var(--mute);font-size:13.5px;margin:6px 0 10px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13px;text-decoration:none;cursor:pointer}
+.btn.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.on{background:var(--accent2);border-color:var(--accent);color:var(--accent)}
+.empty{text-align:center;color:var(--mute);padding:40px 0}
+footer{max-width:880px;margin:auto;padding:0 16px 30px;color:var(--mute);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Legal <span>Desk</span> · Kolkata</h1>
+  <div class="sub" id="stamp">Loading…</div>
+</header>
+
+<div class="bar"><div class="bar-in">
+  <input id="q" type="search" placeholder="Search title, company, skill…" autocomplete="off">
+  <div class="row">
+    <select id="cat"><option value="">All types</option></select>
+    <select id="src"><option value="">All sources</option></select>
+    <select id="age">
+      <option value="">Any date</option>
+      <option value="2">Last 2 days</option>
+      <option value="7">Last 7 days</option>
+      <option value="14">Last 14 days</option>
+    </select>
+    <select id="sort">
+      <option value="new">Newest first</option>
+      <option value="match">Best CV match</option>
+    </select>
+  </div>
+  <div class="chips">
+    <button class="chip on" data-view="all">All</button>
+    <button class="chip" data-view="new">New today</button>
+    <button class="chip" data-view="saved">Saved</button>
+    <button class="chip" data-view="applied">Applied</button>
+    <button class="chip" data-view="hidden">Hidden</button>
+  </div>
+</div></div>
+
+<main id="list"></main>
+<footer>Match % compares each posting with the skill keywords in <code>scraper/config.json</code>. Saved / applied / hidden marks are stored only in this browser.</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+let JOBS = [], VIEW = "all";
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem("legaldesk") || "{}"); } catch(e){ return {}; } },
+  set(v){ try { localStorage.setItem("legaldesk", JSON.stringify(v)); } catch(e){} }
+};
+let MARK = store.get();
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = () => new Date().toISOString().slice(0,10);
+const daysAgo = d => d ? Math.floor((Date.now() - new Date(d).getTime())/864e5) : null;
+
+async function init(){
+  try {
+    const r = await fetch("jobs.json?" + Date.now());
+    const d = await r.json();
+    JOBS = d.jobs || [];
+    const u = new Date(d.updated);
+    $("#stamp").textContent = JOBS.length + " openings · updated " + u.toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});
+  } catch(e){
+    $("#stamp").textContent = "Could not load jobs.json";
+  }
+  fill("#cat", [...new Set(JOBS.map(j => j.category))].sort());
+  fill("#src", [...new Set(JOBS.map(j => j.source.split(" / ")[0]))].sort());
+  ["q","cat","src","age","sort"].forEach(id => $("#"+id).addEventListener("input", render));
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    document.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
+    c.classList.add("on"); VIEW = c.dataset.view; render();
+  });
+  render();
+}
+function fill(sel, vals){ vals.forEach(v => $(sel).insertAdjacentHTML("beforeend", `<option>${esc(v)}</option>`)); }
+
+function toggle(id, key){
+  MARK[id] = MARK[id] || {};
+  MARK[id][key] = !MARK[id][key];
+  store.set(MARK); render();
+}
+
+function render(){
+  const q = $("#q").value.toLowerCase().trim();
+  const age = +$("#age").value || 0;
+  let list = JOBS.filter(j => {
+    const m = MARK[j.id] || {};
+    if (VIEW === "hidden") { if (!m.hide) return false; } else if (m.hide) return false;
+    if (VIEW === "saved" && !m.save) return false;
+    if (VIEW === "applied" && !m.applied) return false;
+    if (VIEW === "new" && j.first_seen !== today()) return false;
+    if ($("#cat").value && j.category !== $("#cat").value) return false;
+    if ($("#src").value && !j.source.startsWith($("#src").value)) return false;
+    if (age){ const a = daysAgo(j.posted || j.first_seen); if (a !== null && a > age) return false; }
+    if (q && !(j.title+" "+j.company+" "+j.desc+" "+(j.matched_skills||[]).join(" ")).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const s = $("#sort").value;
+  list.sort((a,b) => s === "match"
+    ? b.match - a.match
+    : String(b.posted || b.first_seen).localeCompare(String(a.posted || a.first_seen)));
+
+  $("#list").innerHTML = list.length ? list.map(card).join("") : `<div class="empty">No jobs match these filters.</div>`;
+}
+
+function card(j){
+  const m = MARK[j.id] || {};
+  const a = daysAgo(j.posted || j.first_seen);
+  const when = a === null ? "" : a <= 0 ? "Today" : a === 1 ? "1 day ago" : a + " days ago";
+  const isNew = j.first_seen === today();
+  return `<article class="card">
+    <div class="top">
+      <div><h2 class="title">${esc(j.title)}</h2><div class="co">${esc(j.company)} · ${esc(j.location)}</div></div>
+      <div class="score">${j.match}%<small>match</small></div>
+    </div>
+    <div class="meta">
+      ${isNew ? '<span class="tag new">New</span>' : ""}
+      <span class="tag">${esc(j.category)}</span>
+      ${when ? `<span class="tag plain">${when}</span>` : ""}
+      ${j.salary ? `<span class="tag plain">${esc(j.salary)}</span>` : ""}
+      <span class="tag plain">${esc(j.source)}${(j.also_on||[]).length ? " +" + j.also_on.length : ""}</span>
+    </div>
+    ${j.desc ? `<div class="desc">${esc(j.desc.slice(0,220))}${j.desc.length>220?"…":""}</div>` : ""}
+    <div class="acts">
+      <a class="btn pri" href="${esc(j.url)}" target="_blank" rel="noopener">Open &amp; apply</a>
+      <button class="btn ${m.save?"on":""}" onclick="toggle('${j.id}','save')">${m.save?"Saved":"Save"}</button>
+      <button class="btn ${m.applied?"on":""}" onclick="toggle('${j.id}','applied')">${m.applied?"Applied ✓":"Mark applied"}</button>
+      <button class="btn" onclick="toggle('${j.id}','hide')">${m.hide?"Unhide":"Hide"}</button>
+    </div>
+  </article>`;
+}
+init();
+</script>
+</body>
+</html>

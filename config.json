@@ -1,0 +1,41 @@
+{
+  "city_label": "Kolkata",
+  "location_terms": ["kolkata", "calcutta", "howrah", "salt lake", "bidhannagar", "new town", "rajarhat", "sector v", "sector 5", "newtown"],
+  "queries": [
+    "legal executive",
+    "legal officer",
+    "legal manager",
+    "legal advisor",
+    "legal associate",
+    "property lawyer",
+    "real estate legal",
+    "title search",
+    "due diligence legal",
+    "banking legal",
+    "mortgage legal",
+    "panel advocate",
+    "legal counsel",
+    "legal compliance",
+    "contract drafting legal",
+    "RERA legal",
+    "advocate",
+    "law associate",
+    "company legal"
+  ],
+  "must_have_any": ["legal", "law", "advocate", "counsel", "lawyer", "conveyanc", "title search", "litigation", "compliance"],
+  "exclude_title_words": ["intern", "fresher", "trainee", "articleship", "apprentice", "paralegal intern", "vice president", "vp ", "general counsel", "partner", "director", "head of", "chief"],
+  "skill_keywords": [
+    "title search", "title report", "due diligence", "mortgage", "equitable mortgage", "registered mortgage",
+    "legal opinion", "vetting", "deed", "sale deed", "agreement", "power of attorney", "poa", "affidavit",
+    "drafting", "real estate", "property", "conveyancing", "registry", "banking", "bank", "nbfc",
+    "rera", "land", "litigation", "compliance", "contract", "documentation", "legal research", "court"
+  ],
+  "categories": {
+    "Bank / NBFC": ["bank", "nbfc", "finance", "housing finance", "hdfc", "sbi", "icici", "axis", "bajaj", "tata capital", "lending", "credit"],
+    "Real estate / developer": ["real estate", "developer", "realty", "properties", "infra", "construction", "housing", "rera", "township", "land"],
+    "Law firm / consultancy": ["law firm", "associates", "& co", "advocates", "chambers", "legal consult", "llp", "solicitor"],
+    "Corporate legal": ["corporate", "contract", "compliance", "in-house", "commercial", "company secretary"]
+  },
+  "max_age_days": 45,
+  "drop_after_unseen_days": 10
+}
